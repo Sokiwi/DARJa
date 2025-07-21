@@ -3,33 +3,10 @@
 # and downloaded into the folder KazanExcelFiles2022-03-30
 # on the date 2022-03-30
 
-# it was checked that the metadata is consistent across these four files,
-# i.e. that the four first columns are identical
-sin <- read.table(file="clipboard")
-fon <- read.table(file="clipboard")
-lek <- read.table(file="clipboard")
-mor <- read.table(file="clipboard")
-identical(sin,fon)  # FALSE
-identical(sin,lek)  # TRUE
-identical(sin,mor)  # FALSE
-identical(fon,lek)  # FALSE
-identical(fon,mor)  # TRUE
-identical(lek,mor)  # FALSE
-sf <- apply(sin==fon, 1, sum)
-which(sf!=3)  # 629, 2330  the difference in -2 vs. 0 for mapID 2330
-sin[629,]
-fon[629,]
-sin[2330,]
-fon[2330,]
-# so the difference in -2 vs. 0 for both
-lm <- apply(lek==mor, 1, sum)
-which(lm!=3)  # 629, 2330
-lek[629,]
-mor[629,]
-lek[2330,]
-mor[2330,]
-# so the difference in -2 vs. 0 for both
-
+# the metadata is consistent across these four files,
+# except for MAPINFO_ID 628 and 2329. For both, the value in the column
+# Номер_нп is -2 in the syntax and lexicon files but 0 in the phonetics 
+# and morphology files
 
 library(readxl)
 
@@ -44,28 +21,28 @@ empty <- function(df) {
 }
 
 # read each file and get rid of empty columns
-L <- read_excel("C:/Wichmann/Current/DARJa/KazanExcelFiles2022-03-30/Leksika.xlsx")
+L <- read_excel("Leksika.xlsx")
 L <- as.data.frame(L)
 empty_cols_L <- empty(L)
 if ( length(empty_cols_L) > 0 ) {
 	L <- L[,-empty(L)]
 }
 
-P <- read_excel("C:/Wichmann/Current/DARJa/KazanExcelFiles2022-03-30/Fonetika.xlsx")
+P <- read_excel("Fonetika.xlsx")
 P <- as.data.frame(P)
 empty_cols_P <- empty(P)
 if ( length(empty_cols_P) > 0 ) {
 	P <- P[,-empty(P)]
 }
 
-M <- read_excel("C:/Wichmann/Current/DARJa/KazanExcelFiles2022-03-30/Morfologiya.xlsx")
+M <- read_excel("Morfologiya.xlsx")
 M <- as.data.frame(M)
 empty_cols_M <- empty(M)
 if ( length(empty_cols_M) > 0 ) {
 	M <- M[,-empty(M)]
 }
 
-S <- read_excel("C:/Wichmann/Current/DARJa/KazanExcelFiles2022-03-30/Cintaksis.xlsx")
+S <- read_excel("Cintaksis.xlsx")
 S <- as.data.frame(S)
 empty_cols_S <- empty(S)
 if ( length(empty_cols_S) > 0 ) {
@@ -369,4 +346,5 @@ d <- data.frame(id, orig_id, lon, lat, type, f, fv)
 erratic_row <- which(d$f=="L_14203")
 d <- d[-erratic_row,]
 save(d, file="darja_data3.RData")
+write.table(d, file="darja_data3.txt", sep="\t", quote=FALSE)
 
