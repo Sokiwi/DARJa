@@ -64,6 +64,9 @@ for (i in 1:(length(F)-1)) {
   }
 } 
 
+# put zeros in the diagonal
+diag(m) <- rep(0, nrow(m))
+
 # save m
 save(m, file="linguistic_distance_matrix4.RData")
 
