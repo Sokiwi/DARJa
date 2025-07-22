@@ -15,19 +15,23 @@ for (i in 1:total_locs) {
   }
 }
 
-# make empty matrix
-mgeo <- matrix(NA, nrow=total_locs, ncol=total_locs, dimnames=list(u,u))
-total <- (total_locs * (total_locs-1))/2
-
-library(geosphere)
+# library(geosphere)
+library(geodist)
 # function for computing the Haversine Great Circle Distance 
 # (in km) given two sets of coordinates
 geo_dist <- function(X1, Y1, X2, Y2) {
-  dh <- distHaversine(c(X1, Y1),c(X2, Y2))
-  # alternatively, from library(geodist), with more precision: 
-  # dh <- geodist(rbind(c(X1,Y1),c(X2,Y2)), measure="geodesic")[2,1]
+  # alternative, using geosphere:
+  # dh <- distHaversine(c(X1, Y1),c(X2, Y2))
+  # from library(geodist), with more precision: 
+  X <- rbind(c(X1,Y1),c(X2,Y2))
+  colnames(X) <- c("lon","lat")
+  dh <- geodist(X, measure="geodesic")[2,1]
   return(round(dh/1000, 0))
 }
+
+# make empty matrix
+mgeo <- matrix(NA, nrow=total_locs, ncol=total_locs, dimnames=list(u,u))
+total <- (total_locs * (total_locs-1))/2
 
 # now compute the geographical distances
 # takes maybe 1/2 hour
