@@ -24,6 +24,8 @@ library(geosphere)
 # (in km) given two sets of coordinates
 geo_dist <- function(X1, Y1, X2, Y2) {
   dh <- distHaversine(c(X1, Y1),c(X2, Y2))
+  # alternatively, from library(geodist), with more precision: 
+  # dh <- geodist(rbind(c(X1,Y1),c(X2,Y2)), measure="geodesic")[2,1]
   return(round(dh/1000, 0))
 }
 
@@ -33,7 +35,7 @@ count <- 0
 for (i in 1:(4192)) {
   for (j in (i+1):4193) {
     count <- count + 1
-    mgeo[i,j] <- mgeo[j,i] <- geo_dist(Gx[[i]], Gy[[i]], Gx[[j]], Gy[[j]])
+    mgeo[as.character(u[i]),as.character(u[j])] <- mgeo[as.character(u[j]),as.character(u[i])] <- geo_dist(Gx[[i]], Gy[[i]], Gx[[j]], Gy[[j]])
     if ( count %% 100 == 0) {
       cat("doing", count, "out of", total, "\n")
     }
