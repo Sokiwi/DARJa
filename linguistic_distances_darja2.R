@@ -1,11 +1,6 @@
 load("darja_data3.RData")  # object called d
 
-## compute lexical distances
-## The results of the following lines of code
-## have been saved as an object called m
-## in the file linguistic_distance_matrix3.RData
-## so this code doesn't have to be run
-
+## compute linguistic distances
 # computation giving equal weight to each feature value
 # f means feature
 # v means value
@@ -36,19 +31,19 @@ F <- list()
 FV <- list()
 
 total_locs <- length(unique(d$id))
-unique_ids <- unique(d$id)
+u <- unique(d$id)
 
 # takes about 45 secs
 for (i in 1:total_locs) {
-  F[[i]] <- d[which(d$id==unique_ids[i]),"f"]
-  FV[[i]] <- d[which(d$id==unique_ids[i]),"fv"]
+  F[[i]] <- d[which(d$id==u[i]),"f"]
+  FV[[i]] <- d[which(d$id==u[i]),"fv"]
   if ( i %% 100 == 0 ) {
     cat("doing", i, "out of", total_locs, "\n")
   }
 }
 
 # create the empty matrix
-m <- matrix(NA, nrow=total_locs, ncol=total_locs, dimnames=list(unique_ids,unique_ids))
+m <- matrix(NA, nrow=total_locs, ncol=total_locs, dimnames=list(u,u))
 
 # run pairwise distances and fill the matrix
 # first time it is run it is saved 
@@ -57,7 +52,7 @@ count <- 0
 for (i in 1:(length(F)-1)) {
   for (j in (i+1):length(F)) {
     count <- count + 1
-    m[i,j] <- m[j,i] <- pair_dist2(F[[i]], FV[[i]], F[[j]], FV[[j]])
+    m[as.character(u[i]),as.character(u[j])] <- m[as.character(u[j]),as.character(u[i])] <- pair_dist2(F[[i]], FV[[i]], F[[j]], FV[[j]])
     if ( count %% 100 == 0) {
       cat("doing", count, "out of", pairs, "\n")
     }
