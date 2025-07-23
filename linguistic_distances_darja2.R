@@ -67,3 +67,23 @@ save(m, file="linguistic_distance_matrix4.RData")
 
 # so next time m is needed just do
 load("linguistic_distance_matrix4.RData")
+
+## toy example
+# first vector of features
+vf1 <- c("A", "B", "B", "C", "D")
+# first vector of feature values
+vfv1 <- c("A_1", "B_1", "B_2", "C_1", "D_1")
+# second vector of features
+vf2 <- c("A", "B", "B", "C")
+# second vector of feature values
+vfv2 <- c("A_1", "B_1", "B_3", "C_2")
+# they have 3 attested features in common (A, B, C), so the distance 
+# should be normalized by 3; feature D is not relevant
+# for feature A they have the same value, so distance here is 0
+# for feature B they share 1 of 3 values, so the distance is 1 - 1/3 = 2/3
+# for feature C they share 0 values, so the distance is 1
+# total distance is the sum of individual distances divided by 3: 
+# 0 + 2/3 + 1 = (5/3)/3 = 5/9 = 0.5556 (rounded to 4 decimal places)
+# testing the function:
+pair_dist2(vf1, vfv1, vf2, vfv2)  # gives 0.5556 as also computed by hand
+
