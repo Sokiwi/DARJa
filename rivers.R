@@ -1,3 +1,9 @@
+# This takes data from rnaturalearth on rivers, and for each pair of locations
+# within a 300 km distance checks how many rivers one has to cross to travel
+# as the crow flies between them
+# Currently the rivers_l data is used; to change to rivers_m change the string
+# rivers_l to rivers_m in lines 72, 85, 87
+
 # download geographical data from rnaturalearth if not already in memory
 geodata <- c("world_s", "rivers_s", "lakes_s", 
              "world_m", "rivers_m", "lakes_m", 
@@ -56,29 +62,19 @@ crc <- function(lon1, lat1, lon2, lat2, rivers_sf) {  # count_rivers_crossed
   rivers_crop <- suppressWarnings(st_crop(rivers_sf, st_bbox(line_sf)))
   
   # Find intersections
-  crossed <- st_crosses(rivers_crop, line_sf, sparse = FALSE)
+  crossed <- invisible(st_crosses(rivers_crop, line_sf, sparse = FALSE))
   num_crossed <- sum(crossed)
   
   return(num_crossed)
 }
 
-pairschecked <- 0
-pairsused <- 0
 L <- nrow(mgeo)  # same as nrow(m)
-cat("id1\tid2\tgeodist\tlingdist\tnumber_rivers\n", file="rivers_m.txt")
+cat("id1\tid2\tgeodist\tlingdist\tnumber_rivers\n", file="rivers_l.txt")
 for (i in 1:(L-1)) {
   for (j in (i+1):L) {
-    if(pairschecked %% 100 == 0) {
-      cat("checked", pairschecked, "pairs\n")
-    }
-    if(pairsused %% 100 == 0) {
-      cat("used", pairsused, "pairs\n")
-    }
-    pairschecked <- pairschecked + 1
     geodist <- mgeo[i,j]
     if (geodist < 300) {
       lingdist <- m[i,j]
-      pairsused <- pairsused + 1
       w_i <- match(rownames(mgeo)[i], d$id)
       w_j <- match(rownames(mgeo)[j], d$id)
       if (sum(is.na(w_i), is.na(w_j)) == 0) {
@@ -86,9 +82,9 @@ for (i in 1:(L-1)) {
         lon2 <- as.numeric(d$lon[w_j])
         lat1 <- as.numeric(d$lat[w_i])
         lat2 <- as.numeric(d$lat[w_j])
-        number_rivers <- invisible(crc(lon1, lat1, lon2, lat2, rivers_m))
-        cat(i, "\t", j, "\t", geodist, "\t", lingdist, "\t", number_rivers, "\n",
-            file="rivers_m.txt", append=TRUE)
+        number_rivers <- invisible(crc(lon1, lat1, lon2, lat2, rivers_l))
+        cat(rownames(mgeo)[i], "\t", rownames(mgeo)[j], "\t", geodist, "\t", lingdist, "\t", number_rivers, "\n",
+            file="rivers_l.txt", append=TRUE)
       }
     }
   }
