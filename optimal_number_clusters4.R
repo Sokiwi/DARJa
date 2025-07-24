@@ -209,8 +209,9 @@ mean(cb$bootmean)
 # would not work, because of missing NW outliers
 
 # complete
-# for k=5 yields 5 relatively even-sized clusters, but the northern area large, 
-# no NW outlier, small Chukhloma
+# for k=5, 3 clusters are relatively even-sized clusters, but the northern area large 
+# and the southern on small 
+# barely any NW outlier, small Chukhloma
 # 54 outliers
 # would not work, because of large N area, no NW cluster, mostly no Chukhloma
 
@@ -221,5 +222,5 @@ mean(cb$bootmean)
 
 # WPGMA
 # for k=5 yields 5 relatively even-sized clusters, large Chukhloma, no NW outlier
-# 87 outliers
+# 82 outliers
 # would not work because of missing NW cluster, and Chukhloma is maybe too large
