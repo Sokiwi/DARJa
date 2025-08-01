@@ -87,6 +87,7 @@ for (i in 1:L) {
 
 # add the column to locs
 locs <- data.frame(locs, b_code)
+write.table(locs, file="biomes_locs.txt", quote=FALSE, sep="\t")
 
 # for each pair of locations check whether biomes are same or different
 # and output to file; 0 means "same", 1 means "different"
