@@ -14,7 +14,7 @@ library(mclust)  # Mclust()
 library(loon)  # l_colorName()
 
 # R data files
-load("darja_data2.RData")  # object called d
+load("darja_data3.RData")  # object called d
 load("linguistic_distance_matrix4.RData")  #  m
 load("WardD.RData")  # WardD (promising)
 load("WardD2.RData")  # WardD2 (missing NW outliers)
@@ -29,78 +29,8 @@ biomes_locs <- read.table(file="biomes_locs.txt")
 # R scripts
 source("locations.R")
 
-# derived objects needed by the function
+# derived object needed by the function
 total_locs <- length(unique(d$id))
-
-# the tree can be cut up into k groups, for instance k = 4,
-# and mapped; the following is a function for that, called dmap
-# for dialect map
-
-# it also has option for taking into account different methods
-# of identifying outliers
-
-# lof scores are scores of how well a location diverges geographically 
-# from its fellows cluster members (=local outlier factor); this seem to work best
-# minpnts is the number of nearest neighbors used in defining the local 
-# neighborhood of a point (includes the point itself)
-# it needs to be above 63 to recognize the outlier in the north as an outlier
-# the lofcutoff could be lowered to include more of the points in the north, but 
-# then it will also include some dots that just happen to be a bit
-# removed from fellow cluster members for geographical reasons
-
-# SVM is a support vector machine identifying items as outliers if they are not
-# predicted by the model; doesn't work so well, perhaps might work better with
-# some parameter tuning
-
-# DBSCAN identifies noisy points, which can be considered outliers; results are
-# rather similar to lof
-
-# KNN counts the number of neighbors belonging to the same group; if this
-# is below the SGC (same group count) threshold the location is counted as
-# an outlier; didn't immediately manage to tune parameters to get a meaningful
-# result
-
-# GMM (Gaussian Mixture Models) produces a log-likelihood for the classification
-# of a given point in its particular cluster
-# if this log-likelihood falls beneath a certain max probability (MP) cutoff 
-# it is defined as an outlier
-# somehow this doesn't work well; some inspection and parameter tuning necessary,
-# but this may not be worth the effort because each fitting takes several seconds
-# making it tedious to do a lot of experiments
-
-# setting lonlim and latlim enables a view of part of the area
-# for instance lonlim=c(27.8,31.5), latlim=c(58,60) shows the diversity in the NW
-# and lonlim=c(40,45), latlim=c(58,60) shows the northen island
-# also possible to choose one of 9 squares: "NW", "NC", "NE", "CW", "CC", ..., "SE"
-
-# labels showing IDs are added automatically when zooming in on a certain area
-# in the GEOPLOT=FALSE mode
-
-# when one of the outlier identifying functions is turned on
-# the following information will be added to the 
-# dataframe with outgroup information: outgroup, id_inmate, orig_id_inmate, 
-# id_outmate, orig_id_outmate, hamming_inmate, hamming_outmate
-
-# A generic map can be made, showing all locations, but not clusters
-# For instance 
-# dmap(GENERICPLOT=TRUE, SCALE="L", MARGIN=7, POINTSIZE=.5, CITYSIZE=1.5, CITYSHAPE = 20)
-# and choosing width of 800 when exporting
-
-# A data frame called cities used for plotting some major cities
-# in the area were prepared in the following way
-# library(toponym) - see https://github.com/Lennart05/toponym
-# top(strings=c("Saint Petersburg", "Vologda", "Pskov", "Moscow", 
-#   "Nizhniy Novgorod", "Smolensk", "Tambov", "Belgorod"), 
-#   countries="RU", name="cities_all")
-# that produces a data frame cities_all from geonames.org, but with some cities 
-# whose names are synonymous, so the right ones are filtered by their geonames IDs
-# ids <- c(498817, 472459, 504341, 524901, 520555, 491687, 484646, 578072)
-# w_ids <- match(ids, cities_all$geonameid)
-# cities <- cities_all[w_ids,c("name", "latitude", "longitude", "group")]
-# There is a column called group, which is reused here with the same name
-# but just given a factor of 1 as values
-# cities$group <- as.factor(1)
-# save(cities, file="cities.RData")
 
 # download geographical data from rnaturalearth if not already in memory
 geodata <- c("world_s", "rivers_s", "lakes_s", 
@@ -126,20 +56,16 @@ dmap <- function(k=5, tree=UPGMA, lonlim=c(0,0), latlim=c(0,0), AREA="NONE",
                  DBSCAN=FALSE, EPS=1.52, KNN=FALSE, K=50, SGC=10, GMM=FALSE, 
                  MP=0.45, LINES=FALSE, GEOPLOT=FALSE, FILL="antiquewhite", 
                  SCALE="L", GENERICPLOT=FALSE, MARGIN=7, POINTSIZE=0.1,
-                 CITYSIZE=1, CITYSHAPE=18, BIOMEPLOT=FALSE) {
-  # trees available: WardD, WardD2, complete, UPGMA, WPGMA, 
-  # choosing one of these areas allows to zoom in on predefined regions
-  # they are the same regions shown by lines if the LINES argument is
-  # set to TRUE and GEOPLOT=FALSE
-  if (AREA=="SW") {latlim <- c(49,54); lonlim <- c(27,34)}
-  if (AREA=="CW") {latlim <- c(54,58); lonlim <- c(27,34)}
+                 CITYSIZE=1, CITYSHAPE=18, BIOMEPLOT=FALSE, FT=NA) {
   if (AREA=="NW") {latlim <- c(58,62); lonlim <- c(27,34)}
-  if (AREA=="SC") {latlim <- c(49,54); lonlim <- c(34,41)}
-  if (AREA=="CC") {latlim <- c(54,58); lonlim <- c(34,41)}
+  if (AREA=="CW") {latlim <- c(54,58); lonlim <- c(27,34)}
+  if (AREA=="SW") {latlim <- c(49,54); lonlim <- c(27,34)}
   if (AREA=="NC") {latlim <- c(58,62); lonlim <- c(34,41)}
-  if (AREA=="SE") {latlim <- c(49,54); lonlim <- c(41,49)}
-  if (AREA=="CE") {latlim <- c(54,58); lonlim <- c(41,49)}
+  if (AREA=="CC") {latlim <- c(54,58); lonlim <- c(34,41)}
+  if (AREA=="SC") {latlim <- c(49,54); lonlim <- c(34,41)}
   if (AREA=="NE") {latlim <- c(58,62); lonlim <- c(41,49)}
+  if (AREA=="CE") {latlim <- c(54,58); lonlim <- c(41,49)}
+  if (AREA=="SE") {latlim <- c(49,54); lonlim <- c(41,49)}
   graphics.off()
   returned_item <- NA
   groups <- cutree(tree, k = k)
@@ -154,6 +80,58 @@ dmap <- function(k=5, tree=UPGMA, lonlim=c(0,0), latlim=c(0,0), AREA="NONE",
   w_na <- union(which(is.na(pdata$x)), which(is.na(pdata$y)))
   if (length(w_na) > 0) {
     pdata <- pdata[-w_na,]
+  }
+  if (is.na(FT)==FALSE) {
+    # treatment different if FT a feature or feature value
+    lookforunderscore <- length(strsplit(FT, "_")[[1]]) - 1
+    if (lookforunderscore==1) {
+      pdata2 <- d[which(d$f==FT),]
+    }
+    if (lookforunderscore==2) {
+      pdata2 <- d[which(d$fv==FT),]
+    }
+    pdata2$fv <- as.factor(pdata2$fv)
+    my_points <- pdata2[,c("lon", "lat", "fv")]
+    names(my_points) <- c("lon", "lat", "featval")
+    
+    # Convert points to an sf object
+    my_points_sf <- st_as_sf(my_points, coords = c("lon", "lat"), crs = 4326)
+    
+    # Bounding box for zooming
+    # this is identical to the whole area unless lonlim and latlim are specified
+    if (identical(lonlim, c(0,0)) & identical(latlim, c(0,0))) {
+      bbox <- st_bbox(my_points_sf)
+    } else {
+      bbox <- st_bbox(c(xmin = lonlim[1], xmax = lonlim[2], ymax = latlim[2], ymin = latlim[1]), crs = st_crs(4326))
+    }
+    
+    # Prepare map data (countries, rivers, lakes)
+    if (SCALE=="S") {world <- world_s; rivers <- rivers_s; lakes <- lakes_s}
+    if (SCALE=="M") {world <- world_m; rivers <- rivers_m; lakes <- lakes_m}
+    if (SCALE=="L") {world <- world_l; rivers <- rivers_l; lakes <- lakes_l}
+    
+    # Create map with ggplot2
+    ggmap <- ggplot() +
+      geom_sf(data = world, fill = FILL, color = "gray60") +
+      geom_sf(data = lakes, fill = "lightblue", color = NA) +
+      geom_sf(data = my_points_sf, aes(color = featval), size = 1) +
+      geom_sf(data = rivers, color = "lightblue", size = 0.6) +
+      # scale_color_viridis_d(option = "D") +
+      scale_color_manual(values = rainbow(length(unique(my_points$featval)))) +
+      annotation_scale(location = "bl", width_hint = 0.2) +
+      # annotation_north_arrow(location = "bl", which_north = "true") +
+      coord_sf(
+        xlim = c(bbox["xmin"] - 0.5, bbox["xmax"] + 0.5),
+        ylim = c(bbox["ymin"] - 0.5, bbox["ymax"] + 0.5),
+        expand = FALSE
+      ) +
+      theme_minimal() +
+      theme(legend.position = "right") +
+      labs(title = "",
+           subtitle = "",
+           x = "Lon", y = "Lat", color = "featval")
+    return(ggmap)
+    ggmap
   }
   if (BIOMEPLOT==TRUE) {
     cat("\nBiome key:\n4: Temperate Broadleaf & Mixed Forests\n6: Boreal Forests/Taiga\n8: Temperate Grasslands, Savannas & Shrublands\n98: Water\n")
