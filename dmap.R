@@ -51,12 +51,13 @@ if (sum(geodata %in% ls()) < 9) {
   lakes_l <- ne_download(scale = "large", type = "lakes", category = "physical", returnclass = "sf")
 }
 
-dmap <- function(k=5, tree=UPGMA, lonlim=c(0,0), latlim=c(0,0), AREA="NONE", 
-                 lofvals=FALSE, lofcutoff=1.5, minpts=65, SVM=FALSE, 
-                 DBSCAN=FALSE, EPS=1.52, KNN=FALSE, K=50, SGC=10, GMM=FALSE, 
-                 MP=0.45, LINES=FALSE, GEOPLOT=FALSE, FILL="antiquewhite", 
-                 SCALE="L", GENERICPLOT=FALSE, MARGIN=7, POINTSIZE=0.1,
-                 CITYSIZE=1, CITYSHAPE=18, BIOMEPLOT=FALSE, FT=NA) {
+dmap <- function(k=5, tree=UPGMA, lonlim=c(0,0), latlim=c(0,0), CITIES=FALSE, 
+                 AREA="NONE", lofvals=FALSE, lofcutoff=1.5, minpts=65, 
+                 SVM=FALSE, DBSCAN=FALSE, EPS=1.52, KNN=FALSE, K=50, SGC=10, 
+                 GMM=FALSE, MP=0.45, LINES=FALSE, GEOPLOT=TRUE, 
+                 FILL="antiquewhite", SCALE="L", GENERICPLOT=FALSE, 
+                 MARGIN=7, POINTSIZE=0.1,CITYSIZE=1, CITYSHAPE=18, 
+                 BIOMEPLOT=FALSE, FT=NA) {
   if (AREA=="NW") {latlim <- c(58,62); lonlim <- c(27,34)}
   if (AREA=="CW") {latlim <- c(54,58); lonlim <- c(27,34)}
   if (AREA=="SW") {latlim <- c(49,54); lonlim <- c(27,34)}
@@ -93,9 +94,16 @@ dmap <- function(k=5, tree=UPGMA, lonlim=c(0,0), latlim=c(0,0), AREA="NONE",
     pdata2$fv <- as.factor(pdata2$fv)
     my_points <- pdata2[,c("lon", "lat", "fv")]
     names(my_points) <- c("lon", "lat", "featval")
+    if (CITIES==TRUE) {
+      my_cities <- cities
+      names(my_cities) <- c("city", "lat", "lon", "group")
+    }
     
     # Convert points to an sf object
     my_points_sf <- st_as_sf(my_points, coords = c("lon", "lat"), crs = 4326)
+    if (CITIES==TRUE) {
+      my_cities_sf <- st_as_sf(my_cities, coords = c("lon", "lat"), crs = 4326)
+    }
     
     # Bounding box for zooming
     # this is identical to the whole area unless lonlim and latlim are specified
@@ -110,28 +118,72 @@ dmap <- function(k=5, tree=UPGMA, lonlim=c(0,0), latlim=c(0,0), AREA="NONE",
     if (SCALE=="M") {world <- world_m; rivers <- rivers_m; lakes <- lakes_m}
     if (SCALE=="L") {world <- world_l; rivers <- rivers_l; lakes <- lakes_l}
     
+    # prepare city labels
+    if (CITIES==TRUE) {
+      my_cities_coords <- my_cities_sf %>%
+        mutate(lon = st_coordinates(.)[,1],
+               lat = st_coordinates(.)[,2]) %>%
+        st_drop_geometry()  # drop geometry to avoid sf-related issues
+    }
+    
     # Create map with ggplot2
-    ggmap <- ggplot() +
-      geom_sf(data = world, fill = FILL, color = "gray60") +
-      geom_sf(data = lakes, fill = "lightblue", color = NA) +
-      geom_sf(data = my_points_sf, aes(color = featval), size = 1) +
-      geom_sf(data = rivers, color = "lightblue", size = 0.6) +
-      # scale_color_viridis_d(option = "D") +
-      scale_color_manual(values = rainbow(length(unique(my_points$featval)))) +
-      annotation_scale(location = "bl", width_hint = 0.2) +
-      # annotation_north_arrow(location = "bl", which_north = "true") +
-      coord_sf(
-        xlim = c(bbox["xmin"] - 0.5, bbox["xmax"] + 0.5),
-        ylim = c(bbox["ymin"] - 0.5, bbox["ymax"] + 0.5),
-        expand = FALSE
-      ) +
-      theme_minimal() +
-      theme(legend.position = "right") +
-      labs(title = "",
-           subtitle = "",
-           x = "Lon", y = "Lat", color = "featval")
-    return(ggmap)
-    ggmap
+    if (CITIES==FALSE) {
+      ggmap <- ggplot() +
+        geom_sf(data = world, fill = FILL, color = "gray60") +
+        geom_sf(data = lakes, fill = "lightblue", color = NA) +
+        geom_sf(data = my_points_sf, aes(color = featval), size = 1) +
+        geom_sf(data = rivers, color = "lightblue", size = 0.6) +
+        # scale_color_viridis_d(option = "D") +
+        scale_color_manual(values = rainbow(length(unique(my_points$featval)))) +
+        annotation_scale(location = "bl", width_hint = 0.2) +
+        # annotation_north_arrow(location = "bl", which_north = "true") +
+        coord_sf(
+          xlim = c(bbox["xmin"] - 0.5, bbox["xmax"] + 0.5),
+          ylim = c(bbox["ymin"] - 0.5, bbox["ymax"] + 0.5),
+          expand = FALSE
+        ) +
+        theme_minimal() +
+        theme(legend.position = "right") +
+        labs(title = "",
+             subtitle = "",
+             x = "Lon", y = "Lat", color = "featval")
+      return(ggmap)
+      ggmap
+    }
+    if (CITIES==TRUE) {
+      ggmap <- ggplot() +
+        geom_sf(data = world, fill = FILL, color = "gray60") +
+        geom_sf(data = lakes, fill = "lightblue", color = NA) +
+        geom_sf(data = my_points_sf, aes(color = featval), size = 1) +
+        geom_sf(data = rivers, color = "lightblue", size = 0.6) +
+        geom_sf(data = my_cities_sf, color="black", size = CITYSIZE, shape=CITYSHAPE) +
+        # scale_color_viridis_d(option = "D") +
+        scale_color_manual(values = rainbow(length(unique(my_points$featval)))) +
+        geom_text_repel(
+          data = my_cities_coords,
+          aes(x = lon, y = lat, label = city),
+          size = 2,
+          color = "black",
+          segment.color = "gray50",
+          max.overlaps = Inf,
+          box.padding = 0.1,
+          point.padding = 0.05
+        ) +
+        annotation_scale(location = "bl", width_hint = 0.2) +
+        # annotation_north_arrow(location = "bl", which_north = "true") +
+        coord_sf(
+          xlim = c(bbox["xmin"] - 0.5, bbox["xmax"] + 0.5),
+          ylim = c(bbox["ymin"] - 0.5, bbox["ymax"] + 0.5),
+          expand = FALSE
+        ) +
+        theme_minimal() +
+        theme(legend.position = "right") +
+        labs(title = "",
+             subtitle = "",
+             x = "Lon", y = "Lat", color = "featval")
+      return(ggmap)
+      ggmap
+    }
   }
   if (BIOMEPLOT==TRUE) {
     cat("\nBiome key:\n4: Temperate Broadleaf & Mixed Forests\n6: Boreal Forests/Taiga\n8: Temperate Grasslands, Savannas & Shrublands\n98: Water\n")
@@ -140,10 +192,17 @@ dmap <- function(k=5, tree=UPGMA, lonlim=c(0,0), latlim=c(0,0), AREA="NONE",
     pdata2 <- data.frame(pdata, biome)
     my_points <- pdata2[,c("x", "y", "biome")]
     names(my_points) <- c("lon", "lat", "biome")
-
+    if (CITIES==TRUE) {
+      my_cities <- cities
+      names(my_cities) <- c("city", "lat", "lon", "group")
+    }
+    
     # Convert points to an sf object
     my_points_sf <- st_as_sf(my_points, coords = c("lon", "lat"), crs = 4326)
-
+    if (CITIES==TRUE) {
+      my_cities_sf <- st_as_sf(my_cities, coords = c("lon", "lat"), crs = 4326)
+    }
+    
     # Bounding box for zooming
     # this is identical to the whole area unless lonlim and latlim are specified
     if (identical(lonlim, c(0,0)) & identical(latlim, c(0,0))) {
@@ -156,29 +215,71 @@ dmap <- function(k=5, tree=UPGMA, lonlim=c(0,0), latlim=c(0,0), AREA="NONE",
     if (SCALE=="S") {world <- world_s; rivers <- rivers_s; lakes <- lakes_s}
     if (SCALE=="M") {world <- world_m; rivers <- rivers_m; lakes <- lakes_m}
     if (SCALE=="L") {world <- world_l; rivers <- rivers_l; lakes <- lakes_l}
+    if (CITIES==TRUE) {
+      my_cities_coords <- my_cities_sf %>%
+        mutate(lon = st_coordinates(.)[,1],
+               lat = st_coordinates(.)[,2]) %>%
+        st_drop_geometry()  # drop geometry to avoid sf-related issues
+    }
     
     # Create map with ggplot2
-    ggmap <- ggplot() +
-      geom_sf(data = world, fill = FILL, color = "gray60") +
-      geom_sf(data = lakes, fill = "lightblue", color = NA) +
-      geom_sf(data = my_points_sf, aes(color = biome), size = 1) +
-      geom_sf(data = rivers, color = "lightblue", size = 0.6) +
-      # scale_color_viridis_d(option = "D") +
-      scale_color_manual(values = rainbow(length(unique(my_points$biome)))) +
-      annotation_scale(location = "bl", width_hint = 0.2) +
-      # annotation_north_arrow(location = "bl", which_north = "true") +
-      coord_sf(
-        xlim = c(bbox["xmin"] - 0.5, bbox["xmax"] + 0.5),
-        ylim = c(bbox["ymin"] - 0.5, bbox["ymax"] + 0.5),
-        expand = FALSE
-      ) +
-      theme_minimal() +
-      theme(legend.position = "right") +
-      labs(title = "",
-           subtitle = "",
-           x = "Lon", y = "Lat", color = "biome")
-    return(ggmap)
-    ggmap
+    if (CITIES==FALSE) {
+      ggmap <- ggplot() +
+        geom_sf(data = world, fill = FILL, color = "gray60") +
+        geom_sf(data = lakes, fill = "lightblue", color = NA) +
+        geom_sf(data = my_points_sf, aes(color = biome), size = 1) +
+        geom_sf(data = rivers, color = "lightblue", size = 0.6) +
+        # scale_color_viridis_d(option = "D") +
+        scale_color_manual(values = rainbow(length(unique(my_points$biome)))) +
+        annotation_scale(location = "bl", width_hint = 0.2) +
+        # annotation_north_arrow(location = "bl", which_north = "true") +
+        coord_sf(
+          xlim = c(bbox["xmin"] - 0.5, bbox["xmax"] + 0.5),
+          ylim = c(bbox["ymin"] - 0.5, bbox["ymax"] + 0.5),
+          expand = FALSE
+        ) +
+        theme_minimal() +
+        theme(legend.position = "right") +
+        labs(title = "",
+             subtitle = "",
+             x = "Lon", y = "Lat", color = "biome")
+      return(ggmap)
+      ggmap
+    }
+    if (CITIES==TRUE) {
+      ggmap <- ggplot() +
+        geom_sf(data = world, fill = FILL, color = "gray60") +
+        geom_sf(data = lakes, fill = "lightblue", color = NA) +
+        geom_sf(data = my_points_sf, aes(color = biome), size = 1) +
+        geom_sf(data = rivers, color = "lightblue", size = 0.6) +
+        geom_sf(data = my_cities_sf, color="black", size = CITYSIZE, shape=CITYSHAPE) +
+        # scale_color_viridis_d(option = "D") +
+        scale_color_manual(values = rainbow(length(unique(my_points$biome)))) +
+        geom_text_repel(
+          data = my_cities_coords,
+          aes(x = lon, y = lat, label = city),
+          size = 2,
+          color = "black",
+          segment.color = "gray50",
+          max.overlaps = Inf,
+          box.padding = 0.1,
+          point.padding = 0.05
+        ) +
+        annotation_scale(location = "bl", width_hint = 0.2) +
+        # annotation_north_arrow(location = "bl", which_north = "true") +
+        coord_sf(
+          xlim = c(bbox["xmin"] - 0.5, bbox["xmax"] + 0.5),
+          ylim = c(bbox["ymin"] - 0.5, bbox["ymax"] + 0.5),
+          expand = FALSE
+        ) +
+        theme_minimal() +
+        theme(legend.position = "right") +
+        labs(title = "",
+             subtitle = "",
+             x = "Lon", y = "Lat", color = "biome")
+      return(ggmap)
+      ggmap
+    }
   }
   if (GENERICPLOT==TRUE) {
     my_points <- pdata[,c("x", "y", "group")]
@@ -251,9 +352,16 @@ dmap <- function(k=5, tree=UPGMA, lonlim=c(0,0), latlim=c(0,0), AREA="NONE",
       my_points <- pdata[,c("x", "y", "group")]
       my_points$group <- factor(my_points$group)
       names(my_points) <- c("lon", "lat", "group")
+      if (CITIES==TRUE) {
+        my_cities <- cities
+        names(my_cities) <- c("city", "lat", "lon", "group")
+      }
       
       # Convert points to an sf object
       my_points_sf <- st_as_sf(my_points, coords = c("lon", "lat"), crs = 4326)
+      if (CITIES==TRUE) {
+        my_cities_sf <- st_as_sf(my_cities, coords = c("lon", "lat"), crs = 4326)
+      }
       
       # Bounding box for zooming
       # this is identical to the whole area unless lonlim and latlim are specified
@@ -268,28 +376,72 @@ dmap <- function(k=5, tree=UPGMA, lonlim=c(0,0), latlim=c(0,0), AREA="NONE",
       if (SCALE=="M") {world <- world_m; rivers <- rivers_m; lakes <- lakes_m}
       if (SCALE=="L") {world <- world_l; rivers <- rivers_l; lakes <- lakes_l}
       
+      # prepare city labels
+      if (CITIES==TRUE) {
+        my_cities_coords <- my_cities_sf %>%
+          mutate(lon = st_coordinates(.)[,1],
+                 lat = st_coordinates(.)[,2]) %>%
+          st_drop_geometry()  # drop geometry to avoid sf-related issues
+      }
+      
       # Create map with ggplot2
-      ggmap <- ggplot() +
-        geom_sf(data = world, fill = FILL, color = "gray60") +
-        geom_sf(data = lakes, fill = "lightblue", color = NA) +
-        geom_sf(data = my_points_sf, aes(color = group), size = 1) +
-        geom_sf(data = rivers, color = "lightblue", size = 0.6) +
-        # scale_color_viridis_d(option = "D") +
-        scale_color_manual(values = rainbow(length(unique(my_points$group)))) +
-        annotation_scale(location = "bl", width_hint = 0.2) +
-        # annotation_north_arrow(location = "bl", which_north = "true") +
-        coord_sf(
-          xlim = c(bbox["xmin"] - 0.5, bbox["xmax"] + 0.5),
-          ylim = c(bbox["ymin"] - 0.5, bbox["ymax"] + 0.5),
-          expand = FALSE
-        ) +
-        theme_minimal() +
-        theme(legend.position = "right") +
-        labs(title = "",
-             subtitle = "",
-             x = "Lon", y = "Lat", color = "Cluster")
-      return(ggmap)
-      ggmap
+      if (CITIES==FALSE) {
+        ggmap <- ggplot() +
+          geom_sf(data = world, fill = FILL, color = "gray60") +
+          geom_sf(data = lakes, fill = "lightblue", color = NA) +
+          geom_sf(data = my_points_sf, aes(color = group), size = 1) +
+          geom_sf(data = rivers, color = "lightblue", size = 0.6) +
+          # scale_color_viridis_d(option = "D") +
+          scale_color_manual(values = rainbow(length(unique(my_points$group)))) +
+          annotation_scale(location = "bl", width_hint = 0.2) +
+          # annotation_north_arrow(location = "bl", which_north = "true") +
+          coord_sf(
+            xlim = c(bbox["xmin"] - 0.5, bbox["xmax"] + 0.5),
+            ylim = c(bbox["ymin"] - 0.5, bbox["ymax"] + 0.5),
+            expand = FALSE
+          ) +
+          theme_minimal() +
+          theme(legend.position = "right") +
+          labs(title = "",
+               subtitle = "",
+               x = "Lon", y = "Lat", color = "Cluster")
+        return(ggmap)
+        ggmap
+      }
+      if (CITIES==TRUE) {
+        ggmap <- ggplot() +
+          geom_sf(data = world, fill = FILL, color = "gray60") +
+          geom_sf(data = lakes, fill = "lightblue", color = NA) +
+          geom_sf(data = my_points_sf, aes(color = group), size = 1) +
+          geom_sf(data = rivers, color = "lightblue", size = 0.6) +
+          geom_sf(data = my_cities_sf, color="black", size = CITYSIZE, shape=CITYSHAPE) +
+          # scale_color_viridis_d(option = "D") +
+          scale_color_manual(values = rainbow(length(unique(my_points$group)))) +
+          geom_text_repel(
+            data = my_cities_coords,
+            aes(x = lon, y = lat, label = city),
+            size = 2,
+            color = "black",
+            segment.color = "gray50",
+            max.overlaps = Inf,
+            box.padding = 0.1,
+            point.padding = 0.05
+          ) +
+          annotation_scale(location = "bl", width_hint = 0.2) +
+          # annotation_north_arrow(location = "bl", which_north = "true") +
+          coord_sf(
+            xlim = c(bbox["xmin"] - 0.5, bbox["xmax"] + 0.5),
+            ylim = c(bbox["ymin"] - 0.5, bbox["ymax"] + 0.5),
+            expand = FALSE
+          ) +
+          theme_minimal() +
+          theme(legend.position = "right") +
+          labs(title = "",
+               subtitle = "",
+               x = "Lon", y = "Lat", color = "Cluster")
+        return(ggmap)
+        ggmap
+      }
     }
     if (lofvals==TRUE) {
       LOF <- rep(0, nrow(pdata))
@@ -305,10 +457,17 @@ dmap <- function(k=5, tree=UPGMA, lonlim=c(0,0), latlim=c(0,0), AREA="NONE",
       # outliers (pch = 0)
       my_squares <- pdp[pdp$LOF>lofcutoff,c("x", "y", "group")]
       names(my_squares) <- c("lon", "lat", "group")
+      if (CITIES==TRUE) {
+        my_cities <- cities
+        names(my_cities) <- c("city", "lat", "lon", "group")
+      }
       
       # Convert points to an sf object
       my_points_sf <- st_as_sf(my_points, coords = c("lon", "lat"), crs = 4326)
       my_squares_sf <- st_as_sf(my_squares, coords = c("lon", "lat"), crs = 4326)
+      if (CITIES==TRUE) {
+        my_cities_sf <- st_as_sf(my_cities, coords = c("lon", "lat"), crs = 4326)
+      }
       
       # Bounding box for zooming
       # this is identical to the whole area unless lonlim and latlim are specified
@@ -323,29 +482,74 @@ dmap <- function(k=5, tree=UPGMA, lonlim=c(0,0), latlim=c(0,0), AREA="NONE",
       if (SCALE=="M") {world <- world_m; rivers <- rivers_m; lakes <- lakes_m}
       if (SCALE=="L") {world <- world_l; rivers <- rivers_l; lakes <- lakes_l}
       
-      # 3. Create map with ggplot2
-      ggmap <- ggplot() +
-        geom_sf(data = world, fill = FILL, color = "gray60") +
-        geom_sf(data = lakes, fill = "lightblue", color = NA) +
-        geom_sf(data = my_points_sf, aes(color = group), size = 2) +
-        geom_sf(data = my_squares_sf, aes(color = group), size = 2, shape=15) +
-        geom_sf(data = rivers, color = "lightblue", size = 0.6) +
-        # scale_color_viridis_d(option = "D") +
-        scale_color_manual(values = rainbow(length(unique(my_points$group)))) +
-        annotation_scale(location = "bl", width_hint = 0.2) +
-        # annotation_north_arrow(location = "bl", which_north = "true") +
-        coord_sf(
-          xlim = c(bbox["xmin"] - 0.5, bbox["xmax"] + 0.5),
-          ylim = c(bbox["ymin"] - 0.5, bbox["ymax"] + 0.5),
-          expand = FALSE
-        ) +
-        theme_minimal() +
-        theme(legend.position = "right") +
-        labs(title = "",
-             subtitle = "",
-             x = "Lon", y = "Lat", color = "Cluster")
-      return(ggmap)
-      ggmap
+      # prepare city labels
+      if (CITIES==TRUE) {
+        my_cities_coords <- my_cities_sf %>%
+          mutate(lon = st_coordinates(.)[,1],
+                 lat = st_coordinates(.)[,2]) %>%
+          st_drop_geometry()  # drop geometry to avoid sf-related issues
+      }
+
+      # Create map with ggplot2
+      if (CITIES==FALSE) {
+        ggmap <- ggplot() +
+          geom_sf(data = world, fill = FILL, color = "gray60") +
+          geom_sf(data = lakes, fill = "lightblue", color = NA) +
+          geom_sf(data = my_points_sf, aes(color = group), size = 2) +
+          geom_sf(data = my_squares_sf, aes(color = group), size = 2, shape=15) +
+          geom_sf(data = rivers, color = "lightblue", size = 0.6) +
+          # scale_color_viridis_d(option = "D") +
+          scale_color_manual(values = rainbow(length(unique(my_points$group)))) +
+          annotation_scale(location = "bl", width_hint = 0.2) +
+          # annotation_north_arrow(location = "bl", which_north = "true") +
+          coord_sf(
+            xlim = c(bbox["xmin"] - 0.5, bbox["xmax"] + 0.5),
+            ylim = c(bbox["ymin"] - 0.5, bbox["ymax"] + 0.5),
+            expand = FALSE
+          ) +
+          theme_minimal() +
+          theme(legend.position = "right") +
+          labs(title = "",
+               subtitle = "",
+               x = "Lon", y = "Lat", color = "Cluster")
+        return(ggmap)
+        ggmap
+      }
+      if (CITIES==TRUE) {
+        ggmap <- ggplot() +
+          geom_sf(data = world, fill = FILL, color = "gray60") +
+          geom_sf(data = lakes, fill = "lightblue", color = NA) +
+          geom_sf(data = my_points_sf, aes(color = group), size = 2) +
+          geom_sf(data = my_squares_sf, aes(color = group), size = 2, shape=15) +
+          geom_sf(data = rivers, color = "lightblue", size = 0.6) +
+          geom_sf(data = my_cities_sf, color="black", size = CITYSIZE, shape=CITYSHAPE) +
+          # scale_color_viridis_d(option = "D") +
+          scale_color_manual(values = rainbow(length(unique(my_points$group)))) +
+          geom_text_repel(
+            data = my_cities_coords,
+            aes(x = lon, y = lat, label = city),
+            size = 2,
+            color = "black",
+            segment.color = "gray50",
+            max.overlaps = Inf,
+            box.padding = 0.1,
+            point.padding = 0.05
+          ) +
+          annotation_scale(location = "bl", width_hint = 0.2) +
+          # annotation_north_arrow(location = "bl", which_north = "true") +
+          coord_sf(
+            xlim = c(bbox["xmin"] - 0.5, bbox["xmax"] + 0.5),
+            ylim = c(bbox["ymin"] - 0.5, bbox["ymax"] + 0.5),
+            expand = FALSE
+          ) +
+          theme_minimal() +
+          theme(legend.position = "right") +
+          labs(title = "",
+               subtitle = "",
+               x = "Lon", y = "Lat", color = "Cluster")
+        return(ggmap)
+        ggmap
+      }
     }
   }
   if (GEOPLOT==TRUE & lofvals==TRUE) {
