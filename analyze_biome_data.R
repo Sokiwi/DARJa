@@ -12,6 +12,7 @@ summary(model_log)
 # requires first turning biome_difference into factors
 df$biome_difference <- factor(df$biome_difference, levels = c(0, 1))
 
+library(mgcv)  # bam()
 bam_model <- bam(
   lingdist ~ biome_difference + s(geodist, by = biome_difference),
   data = df, 
@@ -47,11 +48,11 @@ plot_smooth(bam_model,
             view = "geodist",
             plot_all = "biome_difference",
             rug = FALSE,
-            main = "Effect of Distance by Biome Difference",
-            ylab = "Predicted Linguistic Distance",
-            xlab = "Geographic Distance (km)",
+            # main = "Effect of Distance by Biome Difference",
+            ylab = "Predicted linguistic distance",
+            xlab = "Geographic distance (km)",
             col = c("blue", "red"), 
-            legend = TRUE)
+            legend = FALSE)
 
 
 # simple inspection using binning
