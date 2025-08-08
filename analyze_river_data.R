@@ -1,3 +1,37 @@
+## Analyze the influence of rivers
+
+# change number of rivers into 1 if the number is greater than 1
+rivers <- as.numeric(as.logical(x$number_rivers))
+# add that column to the data frame
+df <- data.frame(x, rivers)
+# change the presence/absence of rivers to factors for the sake of the gam
+df$rivers <- factor(df$rivers, levels=c(0,1))
+
+# run a gam (bam) model
+library(mgcv)
+bam_model <- bam(
+  lingdist ~ rivers + s(geodist, by = rivers),
+  data =df,
+  method="fREML"
+)
+summary(bam_model)
+
+# plot the results
+library(itsadug)
+plot_smooth(bam_model,
+            view = "geodist",
+            plot_all = "rivers",
+            rug = FALSE,
+            ylab = "Predicted linguistic distance",
+            xlab = "Geographic distance (km)",
+            col = c("blue", "red"),
+            legend = FALSE)
+
+
+#################################
+#ALTERNATIVE ANALYSIS USING BINS#
+#################################
+
 # This produces a table with average linguistic distances within 30 km 
 # geographical distance bins for cases where two locations are either
 # not separated by a river or separated by (just) one river or lake;
@@ -7,9 +41,9 @@
 # large scale (1:10m; higher resolution) data
 # Medium scale includes relatively few rivers, large scale relatively many
 # See https://www.naturalearthdata.com/downloads/
-# The data were produced with rivers.R, using the rnaturalearth package
 
-x <- read.table(file="rivers_m.txt", header=TRUE, strip.white=TRUE)
+# x <- read.table(file="rivers_m.txt", header=TRUE, strip.white=TRUE)
+x <- read.table(file="rivers_l.txt", header=TRUE, strip.white=TRUE)
 nrow(x)
 
 zero <- x[x$number_rivers==0,]
@@ -86,3 +120,8 @@ pvals <- round(c(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10),4)
 N <- c(N1, N2, N3, N4, N5, N6, N7, N8, N9, N10)
 mean_lingdist <- data.frame(mean_lingdist, pvals, N)
 mean_lingdist
+write.table(mean_lingdist, file="rivers_l_results.txt", sep="\t", row.names = FALSE, quote=FALSE)
+# write.table(mean_lingdist, file="rivers_m_results.txt", sep="\t", row.names = FALSE, quote=FALSE)
+
+
+
