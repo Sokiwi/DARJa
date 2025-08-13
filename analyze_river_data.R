@@ -1,4 +1,5 @@
 ## Analyze the influence of rivers
+x <- read.table("rivers_l.txt", sep="\t", header=TRUE)
 
 # change number of rivers into 1 if the number is greater than 1
 rivers <- as.numeric(as.logical(x$number_rivers))
@@ -16,6 +17,29 @@ bam_model <- bam(
 )
 summary(bam_model)
 
+# Family: gaussian 
+# Link function: identity 
+
+# Formula:
+#   lingdist ~ rivers + s(geodist, by = rivers)
+
+# Parametric coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 0.4471159  0.0001024 4366.33   <2e-16 ***
+#   rivers1     0.0050319  0.0001200   41.95   <2e-16 ***
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+# Approximate significance of smooth terms:
+#   edf Ref.df     F p-value    
+# s(geodist):rivers0 8.963  9.000 22171  <2e-16 ***
+#   s(geodist):rivers1 8.854  8.988 33457  <2e-16 ***
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+# R-sq.(adj) =  0.268   Deviance explained = 26.8%
+# fREML = -2.3349e+06  Scale est. = 0.0038799  n = 1720665
+
 # plot the results
 library(itsadug)
 plot_smooth(bam_model,
@@ -25,103 +49,39 @@ plot_smooth(bam_model,
             ylab = "Predicted linguistic distance",
             xlab = "Geographic distance (km)",
             col = c("blue", "red"),
-            legend = FALSE)
+            legend_plot_all = "right")
 
 
 #################################
 #ALTERNATIVE ANALYSIS USING BINS#
 #################################
 
-# This produces a table with average linguistic distances within 30 km 
-# geographical distance bins for cases where two locations are either
-# not separated by a river or separated by (just) one river or lake;
-# also provides p-values from a t-test of differences in the means and N
-# Takes either rivers_m.txt or rivers_l.txt as input
-# These are respectively medium (1:50m; medium resolution) and 
-# large scale (1:10m; higher resolution) data
-# Medium scale includes relatively few rivers, large scale relatively many
-# See https://www.naturalearthdata.com/downloads/
+max(df$geodist)  # 299
+df$bin <- cut(df$geodist,
+               breaks = seq(0, 300, by = 30),
+               include.lowest = TRUE,
+               right = FALSE,
+               labels = paste0(seq(0, 270, by = 30), "-", seq(30, 300, by = 30)))
 
-# x <- read.table(file="rivers_m.txt", header=TRUE, strip.white=TRUE)
-x <- read.table(file="rivers_l.txt", header=TRUE, strip.white=TRUE)
-nrow(x)
+# Initialize result container
+library(dplyr)
+summary_df <- df %>%
+  group_by(bin) %>%
+  summarise(
+    river_pres  = round(mean(lingdist[rivers == 1], na.rm = TRUE),4),
+    river_abs = round(mean(lingdist[rivers == 0], na.rm = TRUE),4),
+    p = ifelse(
+      length(lingdist[rivers == 1]) > 1 &&
+        length(lingdist[rivers == 0]) > 1,
+      round(t.test(lingdist[rivers == 1],
+                   lingdist[rivers == 0])$p.value,4),
+      NA_real_
+    ),
+    N = n()
+  ) %>%
+  ungroup()
 
-zero <- x[x$number_rivers==0,]
-one <- x[x$number_rivers==1,]
-
-# zero_one <- rbind(zero, one)
-nrow(zero) + nrow(one)
-
-# bins_zero <- cut(zero$geodist, breaks=10)
-bins_zero <- cut(zero$geodist, breaks=seq(0, 300, 30))
-zero <- data.frame(zero, bins_zero)
-
-# bins_one <- cut(one$geodist, breaks=10)
-bins_one <- cut(one$geodist, breaks=seq(0, 300, 30))
-one <- data.frame(one, bins_one)
-
-no_riv_aggr <- aggregate(zero$lingdist, by=list(bins_zero), mean)
-riv_aggr <- aggregate(one$lingdist, by=list(bins_one), mean)
-
-test1 <- t.test(zero$lingdist[zero$bins_zero=="(0,30]"],one$lingdist[one$bins_one=="(0,30]"])
-p1 <- test1$p.value
-# (0,30], significant
-
-test2 <- t.test(zero$lingdist[zero$bins_zero=="(30,60]"],one$lingdist[one$bins_one=="(30,60]"])
-p2 <- test2$p.value
-# (30,60], significant
-
-test3 <- t.test(zero$lingdist[zero$bins_zero=="(60,90]"],one$lingdist[one$bins_one=="(60,90]"])
-p3 <- test3$p.value
-# (60,90], significant
-
-test4 <- t.test(zero$lingdist[zero$bins_zero=="(90,120]"],one$lingdist[one$bins_one=="(90,120]"])
-p4 <- test4$p.value
-# (90,120], significant
-
-test5 <- t.test(zero$lingdist[zero$bins_zero=="(120,150]"],one$lingdist[one$bins_one=="(120,150]"])
-p5 <- test5$p.value
-# (120,150], significant
-
-test6 <- t.test(zero$lingdist[zero$bins_zero=="(150,180]"],one$lingdist[one$bins_one=="(150,180]"])
-p6 <- test6$p.value
-# (150,180], not significant
-
-test7 <- t.test(zero$lingdist[zero$bins_zero=="(180,210]"],one$lingdist[one$bins_one=="(180,210]"])
-p7 <- test7$p.value
-# (180,210], significant
-
-test8 <- t.test(zero$lingdist[zero$bins_zero=="(210,240]"],one$lingdist[one$bins_one=="(210,240]"])
-p8 <- test8$p.value
-# (210,240], significant
-
-test9 <- t.test(zero$lingdist[zero$bins_zero=="(240,270]"],one$lingdist[one$bins_one=="(240,270]"])
-p9 <- test9$p.value
-# (240,270], significant
-
-test10 <- t.test(zero$lingdist[zero$bins_zero=="(270,300]"],one$lingdist[one$bins_one=="(270,300]"])
-p10 <- test10$p.value
-# (270,300], significant
-
-N1 <- sum(length(zero$lingdist[zero$bins_zero=="(0,30]"]),length(one$lingdist[one$bins_one=="(0,30]"]))
-N2 <- sum(length(zero$lingdist[zero$bins_zero=="(30,60]"]),length(one$lingdist[one$bins_one=="(30,60]"]))
-N3 <- sum(length(zero$lingdist[zero$bins_zero=="(60,90]"]),length(one$lingdist[one$bins_one=="(60,90]"]))
-N4 <- sum(length(zero$lingdist[zero$bins_zero=="(90,120]"]),length(one$lingdist[one$bins_one=="(90,120]"]))
-N5 <- sum(length(zero$lingdist[zero$bins_zero=="(120,150]"]),length(one$lingdist[one$bins_one=="(120,150]"]))
-N6 <- sum(length(zero$lingdist[zero$bins_zero=="(150,180]"]),length(one$lingdist[one$bins_one=="(150,180]"]))
-N7 <- sum(length(zero$lingdist[zero$bins_zero=="(180,210]"]),length(one$lingdist[one$bins_one=="(180,210]"]))
-N8 <- sum(length(zero$lingdist[zero$bins_zero=="(210,240]"]),length(one$lingdist[one$bins_one=="(210,240]"]))
-N9 <- sum(length(zero$lingdist[zero$bins_zero=="(240,270]"]),length(one$lingdist[one$bins_one=="(240,270]"]))
-N10 <- sum(length(zero$lingdist[zero$bins_zero=="(270,300]"]),length(one$lingdist[one$bins_one=="(270,300]"]))
-
-mean_lingdist <- data.frame(no_riv_aggr$Group.1, round(riv_aggr$x,4), round(no_riv_aggr$x,4))
-names(mean_lingdist) <- c("bins", "rivers", "no_rivers")
-pvals <- round(c(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10),4)
-N <- c(N1, N2, N3, N4, N5, N6, N7, N8, N9, N10)
-mean_lingdist <- data.frame(mean_lingdist, pvals, N)
-mean_lingdist
-write.table(mean_lingdist, file="rivers_l_results.txt", sep="\t", row.names = FALSE, quote=FALSE)
-# write.table(mean_lingdist, file="rivers_m_results.txt", sep="\t", row.names = FALSE, quote=FALSE)
-
-
-
+# Preview
+print(summary_df)
+print(as.data.frame(summary_df))
+# write.table(summary_df, file="river_effects_bins.txt", sep="\t", quote=FALSE, row.names=FALSE)
