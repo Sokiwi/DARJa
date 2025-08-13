@@ -2,7 +2,7 @@ library(mgcv)  # bam()
 
 df <- read.table(file="biomes3.txt", header=TRUE, strip.white=TRUE)
 
-# log transform
+# log transform (optional exploratory analysis)
 df_logged <- df
 df_logged$log_geodist <- log(df_logged$geodist + 1)  # add 1 to avoid log(0)
 model_log <- lm(lingdist ~ log_geodist * biome_difference, data = df_logged)
@@ -52,7 +52,7 @@ plot_smooth(bam_model,
             ylab = "Predicted linguistic distance",
             xlab = "Geographic distance (km)",
             col = c("blue", "red"), 
-            legend = FALSE)
+            legend_plot_all = list(x=1350, y=.68))
 
 
 # simple inspection using binning
@@ -84,5 +84,5 @@ summary_df <- df %>%
 # Preview
 print(summary_df)
 print(as.data.frame(summary_df))
-write.table(summary_df, file="biome_effects_bins.txt", sep="\t", quote=FALSE, row.names=FALSE)
+# write.table(summary_df, file="biome_effects_bins.txt", sep="\t", quote=FALSE, row.names=FALSE)
 
