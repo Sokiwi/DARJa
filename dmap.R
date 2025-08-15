@@ -56,8 +56,8 @@ dmap <- function(k=5, tree=UPGMA, lonlim=c(0,0), latlim=c(0,0), CITIES=FALSE,
                  SVM=FALSE, DBSCAN=FALSE, EPS=1.52, KNN=FALSE, K=50, SGC=10, 
                  GMM=FALSE, MP=0.45, LINES=FALSE, GEOPLOT=TRUE, 
                  FILL="antiquewhite", SCALE="L", GENERICPLOT=FALSE, 
-                 MARGIN=7, POINTSIZE=0.1,CITYSIZE=1, CITYSHAPE=18, 
-                 BIOMEPLOT=FALSE, FT=NA) {
+                 MARGIN=7, POINTSIZE=0.1, CITYSIZE=1, CITYSHAPE=18, 
+                 BIOMEPLOT=FALSE, FT=NA, JITTER=0.05, ALPHA=1) {
   if (AREA=="NW") {latlim <- c(58,62); lonlim <- c(27,34)}
   if (AREA=="CW") {latlim <- c(54,58); lonlim <- c(27,34)}
   if (AREA=="SW") {latlim <- c(49,54); lonlim <- c(27,34)}
@@ -93,6 +93,14 @@ dmap <- function(k=5, tree=UPGMA, lonlim=c(0,0), latlim=c(0,0), CITIES=FALSE,
     }
     pdata2$fv <- as.factor(pdata2$fv)
     my_points <- pdata2[,c("lon", "lat", "fv")]
+    if (lookforunderscore==1) {
+      # setting the seed causes the jitter to be the same when function is reused
+      set.seed(123)
+      N <- nrow(my_points)
+      # add jitter; if JITTER is set to 0 nothing will happen
+      my_points$lon <- as.character(as.numeric(my_points$lon) + runif(N, -JITTER, JITTER))
+      my_points$lat <- as.character(as.numeric(my_points$lat) + runif(N, -JITTER, JITTER))
+    }
     names(my_points) <- c("lon", "lat", "featval")
     if (CITIES==TRUE) {
       my_cities <- cities
@@ -131,7 +139,7 @@ dmap <- function(k=5, tree=UPGMA, lonlim=c(0,0), latlim=c(0,0), CITIES=FALSE,
       ggmap <- ggplot() +
         geom_sf(data = world, fill = FILL, color = "gray60") +
         geom_sf(data = lakes, fill = "lightblue", color = NA) +
-        geom_sf(data = my_points_sf, aes(color = featval), size = 1) +
+        geom_sf(data = my_points_sf, aes(color = featval), size = 1, alpha = ALPHA) +
         geom_sf(data = rivers, color = "lightblue", size = 0.6) +
         # scale_color_viridis_d(option = "D") +
         scale_color_manual(values = rainbow(length(unique(my_points$featval)))) +
@@ -154,7 +162,7 @@ dmap <- function(k=5, tree=UPGMA, lonlim=c(0,0), latlim=c(0,0), CITIES=FALSE,
       ggmap <- ggplot() +
         geom_sf(data = world, fill = FILL, color = "gray60") +
         geom_sf(data = lakes, fill = "lightblue", color = NA) +
-        geom_sf(data = my_points_sf, aes(color = featval), size = 1) +
+        geom_sf(data = my_points_sf, aes(color = featval), size = 1, alpha = ALPHA) +
         geom_sf(data = rivers, color = "lightblue", size = 0.6) +
         geom_sf(data = my_cities_sf, color="black", size = CITYSIZE, shape=CITYSHAPE) +
         # scale_color_viridis_d(option = "D") +
