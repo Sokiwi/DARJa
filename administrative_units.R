@@ -158,8 +158,7 @@ plot_smooth(bam_model_oblast,
             ylab = "Predicted linguistic distance",
             xlab = "Geographic distance (km)",
             col = c("blue", "red"),
-            legend_plot_all = "right",
-            main = "Oblast")
+            legend_plot_all = "right")
 
 # Rajon
 max_dist_same_rajon <- max(df[df$rajon==0,]$geodist)
@@ -206,7 +205,6 @@ plot_smooth(bam_model_rajon,
             ylab = "Predicted linguistic distance",
             xlab = "Geographic distance (km)",
             col = c("blue", "red"),
-            main = "Rajon",
             legend_plot_all = "right")
 
 
