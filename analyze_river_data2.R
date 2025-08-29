@@ -26,20 +26,20 @@ summary(bam_model)
 
 # Parametric coefficients:
 #   Estimate Std. Error t value Pr(>|t|)    
-# (Intercept) 0.4471159  0.0001024 4366.33   <2e-16 ***
-#   rivers1     0.0050319  0.0001200   41.95   <2e-16 ***
+# (Intercept) 0.529129   0.002766 191.282  < 2e-16 ***
+#   rivers1     0.015877   0.002766   5.739 9.51e-09 ***
 #   ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
 # Approximate significance of smooth terms:
-#   edf Ref.df     F p-value    
-# s(geodist):rivers0 8.963  9.000 22171  <2e-16 ***
-#   s(geodist):rivers1 8.854  8.988 33457  <2e-16 ***
+#   edf Ref.df      F p-value    
+# s(geodist):rivers0 8.269  8.640  24736  <2e-16 ***
+#   s(geodist):rivers1 8.966  8.999 407102  <2e-16 ***
 #   ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
-# R-sq.(adj) =  0.268   Deviance explained = 26.8%
-# fREML = -2.3349e+06  Scale est. = 0.0038799  n = 1720665
+# R-sq.(adj) =  0.438   Deviance explained = 43.8%
+# fREML = -7.8297e+06  Scale est. = 0.0057078  n = 6726444
 
 # plot the results
 library(itsadug)
