@@ -1,13 +1,13 @@
 # read the data files
 bi <- read.table(file="biomes3.txt", header=TRUE, strip.white=TRUE)
-ri <- read.table("rivers_l.txt", sep="\t", header=TRUE)
+ri <- read.table("rivers_l_all.txt", sep="\t", header=TRUE)
 ad <- read.table(file="admin_units.txt", sep="\t", header=TRUE)
 
-# select only pairs with a geographical distance of 300 km or less
-# since that it the max distance available for all (rivers inducing the limit)
-bi2 <- bi[bi$geodist <= 300,]
-ri2 <- ri[ri$geodist <= 300,]
-ad2 <- ad[ad$geodist <= 300,][,c("id1", "id2", "geodist", "lingdist", "oblast")]
+# select only pairs with a geographical distance of 650 km or less
+# since the max distance available for all is 676 km (oblasts inducing the limit)
+bi2 <- bi[bi$geodist <= 650,]
+ri2 <- ri[ri$geodist <= 650,]
+ad2 <- ad[ad$geodist <= 650,][,c("id1", "id2", "geodist", "lingdist", "oblast")]
 
 # turn the 0/1 values into factors
 bi3 <- bi2
@@ -26,6 +26,7 @@ ad3$oblast <- factor(ad3$oblast, levels=c(0,1))
 rm(ri, bi, ad, ri2, bi2, ad2, rivers)
 
 # join the three data frames
+library(dplyr)
 df <- ad3 %>%
   inner_join(bi3, by = c("id1", "id2", "geodist", "lingdist")) %>%
   inner_join(ri3, by = c("id1", "id2", "geodist", "lingdist"))
@@ -40,6 +41,30 @@ model_all <- bam(
   data = df, method = "fREML"
 )
 summary(model_all)
+
+# Family: gaussian 
+# Link function: identity 
+
+# Formula:
+#   lingdist ~ s(geodist) + biome_difference + rivers + oblast
+
+# Parametric coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)       4.836e-01  2.369e-04 2040.90   <2e-16 ***
+#   biome_difference1 3.776e-02  9.459e-05  399.25   <2e-16 ***
+#   rivers1           7.775e-03  1.632e-04   47.64   <2e-16 ***
+#   oblast1           1.715e-02  1.904e-04   90.05   <2e-16 ***
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+# Approximate significance of smooth terms:
+#   edf Ref.df      F p-value    
+# s(geodist) 8.978      9 105438  <2e-16 ***
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+# R-sq.(adj) =  0.437   Deviance explained = 43.7%
+# fREML = -3.4812e+06  Scale est. = 0.0054134  n = 2924232
 
 library(itsadug)
 plot_smooth(model_all, view="geodist", rug=FALSE, main="Effect of distance")
