@@ -14,8 +14,8 @@ library(mclust)  # Mclust()
 library(loon)  # l_colorName()
 
 # R data files
-load("darja_data3.RData")  # object called d
-load("linguistic_distance_matrix4.RData")  #  m
+load("darja_data4.RData")  # object called d
+load("linguistic_distance_matrix5.RData")  #  m
 load("WardD.RData")  # WardD (promising)
 load("WardD2.RData")  # WardD2 (missing NW outliers)
 load("complete.RData")  # complete (large N area, no NW cluster, mostly no Chukhloma)
