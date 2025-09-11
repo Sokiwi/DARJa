@@ -118,3 +118,52 @@ for (i in 1:(L-1)) {
   }
 }
 
+# Analyze results
+library(mgcv)  # bam()
+
+df <- read.table(file="biomes4.txt", header=TRUE, strip.white=TRUE)
+
+# gam model
+# requires first turning biome_difference into factors
+df$biome_difference <- factor(df$biome_difference, levels = c(0, 1))
+
+bam_model <- bam(
+  lingdist ~ biome_difference + s(geodist, by = biome_difference),
+  data = df, 
+  method = "fREML"
+)
+summary(bam_model)
+
+# Family: gaussian 
+# Link function: identity 
+
+# Formula:
+#   lingdist ~ biome_difference + s(geodist, by = biome_difference)
+# 
+# Parametric coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)       5.559e-01  3.652e-05 15222.7   <2e-16 ***
+#   biome_difference1 2.670e-02  5.646e-05   472.9   <2e-16 ***
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# 
+# Approximate significance of smooth terms:
+#   edf Ref.df      F p-value    
+# s(geodist):biome_difference0 8.987      9 450911  <2e-16 ***
+#   s(geodist):biome_difference1 8.979      9 349590  <2e-16 ***
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+# R-sq.(adj) =  0.529   Deviance explained = 52.9%
+# fREML = -1.0322e+07  Scale est. = 0.0055891  n = 8788528
+
+library(itsadug)
+plot_smooth(bam_model,
+            view = "geodist",
+            plot_all = "biome_difference",
+            rug = FALSE,
+            # main = "Effect of Distance by Biome Difference",
+            ylab = "Predicted linguistic distance",
+            xlab = "Geographic distance (km)",
+            col = c("blue", "red"), 
+            legend_plot_all = list(x=1350, y=.68))
