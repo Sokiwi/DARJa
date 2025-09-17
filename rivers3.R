@@ -65,7 +65,7 @@ for (i in 1:(L-1)) {
       lat1 <- as.numeric(d$lat[w_i])
       lat2 <- as.numeric(d$lat[w_j])
       number_rivers <- invisible(crc(lon1, lat1, lon2, lat2, rivers_l))
-      cat(colnames(mgeo)[i], "\t", colnames(mgeo)[i], "\t", geodist, "\t", lingdist, "\t", number_rivers, "\n",
+      cat(colnames(mgeo)[i], "\t", colnames(mgeo)[j], "\t", geodist, "\t", lingdist, "\t", number_rivers, "\n",
           file="rivers_l_all2.txt", append=TRUE)
     }
   }
