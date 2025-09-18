@@ -200,39 +200,3 @@ out <- data.frame(1:10, results[[1]], results[[2]], results[[3]], results[[4]], 
 out <- out[-1,]
 names(out) <- c("k", "ward.D", "ward.D2", "complete", "UPGMA", "WPGMA")
 write.table(out, file="stability_scores2.txt", sep="\t", row.names=FALSE, quote=FALSE)
-
-
-
-##########################################
-## qualitative observations on the performance of different methods
-##########################################
-
-# the following are some observations of cluster results as
-# depicted using the custum dmap() function
-
-# WardD
-# for k=5 yields 5 relatively even-sized clusters, clear NW outlier, small Chukhloma
-# 95 outliers
-# would work
-
-# WardD2; for k=5 yields 5 relatively even-sized clusters, 
-# no NW outliers, small Chukhloma
-# 74 outliers
-# would not work, because of missing NW outliers
-
-# complete
-# for k=5, 3 clusters are relatively even-sized clusters, but the northern area large 
-# and the southern on small 
-# barely any NW outlier, small Chukhloma
-# 54 outliers
-# would not work, because of large N area, no NW cluster, mostly no Chukhloma
-
-# UPGMA
-# for k=5 yields 3 large and 2 very small clusters
-# only yields outliers with minpts <= 4; then 42 outliers
-# would not work because clusters are too uneven
-
-# WPGMA
-# for k=5 yields 5 relatively even-sized clusters, large Chukhloma, no NW outlier
-# 82 outliers
-# would not work because of missing NW cluster, and Chukhloma is maybe too large
